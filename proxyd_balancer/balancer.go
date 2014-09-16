@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"github.com/AlexisMontagne/proxyd/loadbalance/random"
+	"github.com/AlexisMontagne/proxyd/loadbalance/roundrobin"
 	"github.com/AlexisMontagne/proxyd/proxy"
 	"log"
 	"strconv"
@@ -17,7 +17,7 @@ var (
 func main() {
 	flag.Parse()
 	log.Println("Listen 0.0.0.0:" + strconv.Itoa(*Port))
-	balancer, _ := random.NewBalancer([]string{"http://127.0.0.1:4001"})
+	balancer, _ := roundrobin.NewBalancer([]string{"http://127.0.0.1:4001"})
 	proxy, _ := proxy.NewProxyServer(*Port, "0.0.0.0", true, balancer)
 	proxy.ListenAndServe()
 }

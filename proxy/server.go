@@ -13,6 +13,8 @@ import (
 	"unicode"
 )
 
+const Retry = 5
+
 type ProxyServer struct {
 	Port         int
 	Ip           string
@@ -31,8 +33,18 @@ func NewProxyServer(Port int, Ip string, forwardProxy bool, loadBalancer loadbal
 	return server, nil
 }
 
-func (s *ProxyServer) ProxyResolver(endURL *url.URL) (*url.URL, error) {
-	return s.LoadBalancer.NextEndpoint(endURL)
+func (s *ProxyServer) ProxyResolver(request *http.Request) (*url.URL, error) {
+	retry := 1
+	resp, err := s.LoadBalancer.NextEndpoint(request)
+	for err != nil && retry < Retry {
+		retry += 1
+		resp, err = s.LoadBalancer.NextEndpoint(request)
+	}
+	if retry >= Retry {
+		panic("Deadlock!")
+	}
+
+	return resp, err
 }
 
 func (server *ProxyServer) ListenAndServe() {
@@ -48,7 +60,7 @@ func (s *ProxyServer) ProxyHandler(w http.ResponseWriter, r *http.Request) {
 
 	if s.UseResolver {
 		defaultTransport = &http.Transport{
-			Proxy: func(req *http.Request) (*url.URL, error) { return s.ProxyResolver(r.URL) },
+			Proxy: func(req *http.Request) (*url.URL, error) { return s.ProxyResolver(r) },
 			Dial: (&net.Dialer{
 				Timeout:   30 * time.Second,
 				KeepAlive: 30 * time.Second,

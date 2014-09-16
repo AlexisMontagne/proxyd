@@ -1,7 +1,10 @@
 package loadbalance
 
-import "net/url"
+import (
+	"net/http"
+	"net/url"
+)
 
 type LoadBalancer interface {
-	NextEndpoint(endURL *url.URL) (*url.URL, error)
+	NextEndpoint(request *http.Request) (*url.URL, error)
 }
